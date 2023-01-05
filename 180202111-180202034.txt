@@ -1,0 +1,684 @@
+// Read and write data to and from an SD card using Arduino
+ 
+#include <SPI.h>        // Include SPI library (needed for the SD card)
+#include <SD.h>   // Include SD library
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#define button1 2
+#define button2 3
+#define button3 4
+#define button4 5
+#define button5 6
+#define button6 7
+#define reset 9
+#define redled 0
+#define greenled 8
+int button1durum=0;
+int button2durum=0;
+int button3durum=0;
+int button4durum=0;
+int button5durum=0;
+int button6durum=0;
+int resetdurum=0;
+int resetkontrol=0;
+File myFile;
+int toplam;
+ char beslik[4];
+ char hizmetid[4];
+ int hizmetidx=0;
+ int hizmetindex=0;
+ char hizmetad[7][7];
+ char kalanhizmet[5][5];
+ int kalanhizmetint[4];
+ char hizmetfiyat[5][5];
+ int hizmetfiyatint[4];
+ int hizmetadi=0;
+ int hizmetadj=0;
+ int beslik_sayisi=0;
+ char onluk[5];
+ int onluk_sayisi=0;
+ char yirmi[5];
+ int yirmi_sayisi=0;
+ char elli[5];
+ int elli_sayisi=0;
+ char yuz[5];
+ int yuz_sayisi=0;
+  int end=0;
+ int kontrol=0;
+ int button2_sayaci=0;
+ //int y=0;
+ int button3_sayaci=0;
+ int button4_sayaci=0;
+ int besliksayisi;
+ int altsatir=0;
+// int y=0;
+int ornek=0;
+char file[100];
+int button1_sayaci=0;
+int bitis_sayaci=0;
+int beslira,onlira,yirmilira,ellilira,yuzlira;
+int kasaya_atilan;
+int bitis_sayaci_kontrol=0;
+int secimsayaci=0;
+int beslik_count=0;
+int onluk_count=0;
+int yirmilik_count=0;
+int ellilik_count=0;
+int yuzluk_count=0;
+int hizmet_secim_sayisi=0;
+int paraustu;
+void dosya_gez(){
+  for(int i=0;i<ornek;i++){
+    if(file[i]=='\n'){
+      altsatir++;
+      kontrol=0;
+      if(altsatir==1){
+        hizmetindex=0;
+      }else{
+       hizmetindex++; 
+      }
+      hizmetadj=0;
+      continue;
+    }
+    if(file[i]!=','){
+      if(altsatir==0){
+        if(kontrol==0){
+        beslik[beslik_sayisi]=file[i];
+        beslik_sayisi++;
+      }
+      else if(kontrol==1){
+        onluk[onluk_sayisi]=file[i];
+        onluk_sayisi++;
+      }
+      else if(kontrol==2){
+        yirmi[yirmi_sayisi]=file[i];
+        yirmi_sayisi++;
+      }
+      else if(kontrol==3){
+        elli[elli_sayisi]=file[i];
+        elli_sayisi++;
+      }
+      else if(kontrol==4){
+        yuz[yuz_sayisi]=file[i];
+        yuz_sayisi++;
+      }
+    }else{
+      if(kontrol==0){
+        hizmetid[hizmetidx]=file[i];
+        //Serial.print("*");
+        hizmetidx++;
+      }
+      else if(kontrol==1){
+        hizmetad[hizmetindex][hizmetadj]=file[i];
+        hizmetadj++;
+      }
+      else if(kontrol==2){
+        kalanhizmet[hizmetindex][hizmetadj]=file[i];
+        hizmetadj++;
+      }
+      else if(kontrol==3){
+        hizmetfiyat[hizmetindex][hizmetadj]=file[i];
+        hizmetadj++;
+      }
+      }
+    }
+    else{
+      kontrol++;
+      hizmetadj=0;
+    }
+    //Serial.print(file[i]);
+  }
+  //beslira,onlira,yirmilira,ellira,yuzlira
+  beslira=atoi(beslik);
+  onlira=atoi(onluk);
+  yirmilira=atoi(yirmi);
+  ellilira=atoi(elli);
+  yuzlira=atoi(yuz);
+
+  for(int i=0;i<hizmetindex+1;i++){
+    kalanhizmetint[i]=atoi(kalanhizmet[i]);
+    hizmetfiyatint[i]=atoi(hizmetfiyat[i]);
+  }
+  
+}
+
+void setup() {
+  pinMode(button1,INPUT);
+  pinMode(button2,INPUT);
+  pinMode(button3,INPUT);
+  pinMode(button4,INPUT);
+  pinMode(button5,INPUT);
+  pinMode(button6,INPUT);
+  pinMode(reset,INPUT);
+
+  pinMode(redled,OUTPUT);
+  pinMode(greenled,OUTPUT);
+  
+   int b=0;
+  // Open serial communications and wait for port to open:
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+ 
+  Serial.print("Initializing SD card...");
+ 
+  if (!SD.begin()) {
+    Serial.println(F("initialization failed!"));
+    while (1);
+  }
+  Serial.println(F("initialization done."));
+ 
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  myFile = SD.open("info.txt", FILE_WRITE);
+ 
+  // if the file opened okay, write to it:
+  if (myFile) {
+    //Serial.print("Writing to test.txt...");
+    //myFile.println("testing 1, 2, 3.");
+    // close the file:
+    myFile.close();
+    Serial.println(F("done."));
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println(F("error opening test.txt"));
+  }
+ 
+  // re-open the file for reading:
+  myFile = SD.open("info.txt");
+  if (myFile) {
+    //Serial.println("test.txt:");
+ 
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+       char a=myFile.read();
+       file[ornek]=a;
+      Serial.write(a);
+      ornek++;
+      //Serial.write(myFile.read());
+      //int tamsayi=Serial.parseInt(myFile.read());
+      //Serial.write("*");
+      //tamsayi+=1;
+      //Serial.write(myFile.read());
+    }
+    // close the file:
+    myFile.close();
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println(F("error opening test.txt"));
+  }
+  
+  
+  //Serial.print(ornek);
+  Serial.println();
+  Serial.println(F("1.Buton: 5 TL Sayisi"));
+  Serial.println(F("2.Buton: 10 TL Sayisi"));
+  Serial.println(F("3.Buton: 20 TL Sayisi"));
+  Serial.println(F("4.Buton: 50 TL Sayisi"));
+  Serial.println(F("5.Buton: 100 TL Sayisi"));
+  Serial.println(F("6.Bitis"));
+  dosya_gez();
+  
+  
+}
+
+ 
+void loop() {
+  button1durum=digitalRead(button1);
+  button2durum=digitalRead(button2);
+  button3durum=digitalRead(button3);
+  button4durum=digitalRead(button4);
+  button5durum=digitalRead(button5);
+  button6durum=digitalRead(button6);
+  resetdurum=digitalRead(reset);
+  
+  delay(170);
+  //int beslik_count=0;
+//int onluk_count=0;
+//int yirmilik_count=0;
+//int ellilik_count=0;
+//int yuzluk_count=0;
+  if(button1durum==1){
+    if(bitis_sayaci==0){
+       toplam+=5;
+       beslira++;
+       beslik_count++;
+       Serial.println(F("5 tl atildi"));
+    }
+    else{
+       if(kalanhizmetint[0]>0){
+        hizmet_secim_sayisi++;
+        button1_sayaci++;
+        kalanhizmetint[0]=kalanhizmetint[0]-1;
+        Serial.println(F("kopukleme"));
+        toplam-=hizmetfiyatint[0]; 
+      }else{
+        Serial.println(F("kopukleme icin gecerli hizmet miktari bitmistir"));
+      }
+     
+    }
+    button1durum==0;
+  }
+  if(button2durum==1){
+    if(bitis_sayaci==0){
+      toplam+=10;
+      onlira++;
+      onluk_count++;
+      Serial.println(F("10 Tl atildi"));
+    }else{
+      if(kalanhizmetint[1]>0){
+        button2_sayaci++;
+        hizmet_secim_sayisi++;
+      kalanhizmetint[1]=kalanhizmetint[1]-1;
+      Serial.println(F("yikama"));
+      toplam-=hizmetfiyatint[1];
+      }else{
+        Serial.println(F("yikama icin gecerli hizmet miktari bitmistir"));
+      }
+    }
+    button2durum==0;
+  }
+  if(button3durum==1){
+     if(bitis_sayaci==0){
+        toplam+=20;
+       yirmilira++;
+       yirmilik_count++;
+       Serial.println(F("20 tl atildi"));
+     }
+     else{
+      
+      if(kalanhizmetint[2]>0){
+        button3_sayaci++;
+        hizmet_secim_sayisi++;
+      kalanhizmetint[2]=kalanhizmetint[2]-1;
+      Serial.print(("kurulama"));
+      toplam-=hizmetfiyatint[2];
+      }else{
+        Serial.println(F("kurulama icin gecerli hizmet miktari bitmistir"));
+      }
+    }
+    button3durum==0;
+  }
+  if(button4durum==1){
+    if(bitis_sayaci==0){
+      toplam+=50;
+      ellilira++;
+      ellilik_count++;
+      Serial.println(F("50 tl atildi"));
+    }else{
+      if(kalanhizmetint[3]>0){
+        button4_sayaci++;
+        hizmet_secim_sayisi++;
+      kalanhizmetint[3]=kalanhizmetint[3]-1;
+      Serial.print(("cilalama"));
+      toplam-=hizmetfiyatint[3];
+      }else{
+        Serial.println(F("cilalama icin gecerli hizmet miktari bitmistir"));
+      }
+    }
+    button4durum==0;
+  }
+  
+  if(resetdurum==1){
+    if(bitis_sayaci_kontrol==0 && resetkontrol!=1){
+      Serial.println(F("para atim islemi iptal edilmistir lutfen tekrar para yukleyiniz"));
+      beslira-=beslik_count;
+       onlira-=onluk_count;
+        yirmilira-=yirmilik_count;
+        ellilira-=ellilik_count;
+        yuzlira-=yuzluk_count;
+        beslik_count=0;
+        onluk_count=0;
+        yirmilik_count=0;
+        ellilik_count=0;
+        yuzluk_count=0;
+        Serial.print(toplam);
+        Serial.println(F(" lira para iadesi yapilmistir"));
+        Serial.println(F("1.Buton: 5 TL Sayisi"));
+  Serial.println(F("2.Buton: 10 TL Sayisi"));
+  Serial.println(F("3.Buton: 20 TL Sayisi"));
+  Serial.println(F("4.Buton: 50 TL Sayisi"));
+  Serial.println(F("5.Buton: 100 TL Sayisi"));
+  Serial.println(F("6.Bitis"));
+        toplam=0;
+    }
+    else if(resetkontrol==0 && bitis_sayaci_kontrol!=0){
+      //Serial.println("islemleriniz iptal edildi...");
+      //resetkontrol++;
+      toplam=kasaya_atilan;
+      Serial.println(toplam);
+      hizmet_secim_sayisi=0;
+      kalanhizmetint[0]+=button1_sayaci;
+        kalanhizmetint[1]+=button2_sayaci;
+        kalanhizmetint[2]+=button3_sayaci;
+        kalanhizmetint[3]+=button4_sayaci;
+        //beslira-=beslik_count;
+        //onlira-=onluk_count;
+        //yirmilira-=yirmilik_count;
+        //ellilira-=ellilik_count;
+       //yuzlira-=yuzluk_count;
+        button1_sayaci=0;
+        button2_sayaci=0;
+        button3_sayaci=0;
+        button4_sayaci=0;
+       //beslik_count=0;
+        //onluk_count=0;
+        //yirmilik_count=0;
+        //ellilik_count=0;
+        //yuzluk_count=0;
+        Serial.println(F(" hizmet secim islemleriniz iptal edildi lutfen tekrar secim yapiniz"));
+        Serial.print((beslira));
+      Serial.print((","));
+      Serial.print((onlira));
+      Serial.print((","));
+      Serial.print((yirmilira));
+      Serial.print((","));
+      Serial.print((ellilira));
+      Serial.print((","));
+      Serial.print((yuzlira));
+      Serial.println();
+      Serial.print(("1,kopukleme,"));
+      Serial.print((kalanhizmetint[0]));
+      Serial.print((","));
+      Serial.println(F("15"));
+      Serial.print(("2,yikama,"));
+      Serial.print((kalanhizmetint[1]));
+      Serial.print((","));
+      Serial.println(F("10"));
+      Serial.print(("3,kurulama,"));
+      Serial.print((kalanhizmetint[2]));
+      Serial.print((","));
+      Serial.println(F("5"));
+      Serial.print(F("4,cilalama,"));
+      Serial.print((kalanhizmetint[3]));
+      Serial.print((","));
+      Serial.println(F("50"));
+
+      Serial.println(F("kopukleme"));
+    Serial.println(F("yikama"));
+    Serial.println(F("kurulama"));
+    Serial.println(F("cilalama"));
+    Serial.println(F("Bitis"));
+    Serial.println(F("RESET"));
+    }else if(resetkontrol==1){
+      Serial.println(F("para sikisma durumu meydana geldi"));
+      Serial.print(kasaya_atilan);
+       Serial.println(F(" para iadesi yapilmistir"));
+       Serial.print(beslira);
+      Serial.print(",");
+      Serial.print(onlira);
+      Serial.print(",");
+      Serial.print(yirmilira);
+      Serial.print(",");
+      Serial.print(ellilira);
+      Serial.print(",");
+      Serial.print(yuzlira);
+      Serial.println();
+      Serial.print("1,kopukleme,");
+      Serial.print(kalanhizmetint[0]);
+      Serial.print(",");
+      Serial.println(F("15"));
+      Serial.print("2,yikama,");
+      Serial.print(kalanhizmetint[1]);
+      Serial.print(",");
+      Serial.println(F("10"));
+      Serial.print("3,kurulama,");
+      Serial.print(kalanhizmetint[2]);
+      Serial.print(",");
+      Serial.println("5");
+      Serial.print(F("4,cilalama,"));
+      Serial.print(kalanhizmetint[3]);
+      Serial.print(",");
+      Serial.println(F("50"));
+
+      Serial.println(F("1.Buton: 5 TL Sayisi"));
+  Serial.println(F("2.Buton: 10 TL Sayisi"));
+  Serial.println(F("3.Buton: 20 TL Sayisi"));
+  Serial.println(F("4.Buton: 50 TL Sayisi"));
+  Serial.println(F("5.Buton: 100 TL Sayisi"));
+  Serial.println(F("6.Bitis"));
+       resetkontrol=0;
+    }
+     resetdurum=0;
+  }
+   if(button5durum==1){
+   if(bitis_sayaci==0){
+    toplam+=100;
+    yuzlira++;
+    yuzluk_count++;
+    Serial.println(F("100 tl atildi"));
+   }else if(hizmet_secim_sayisi==0){
+    Serial.println(F("secim yapmadiniz lutfen hizmet secimi yapiniz"));
+   }
+   else{
+    secimsayaci=0;
+    bitis_sayaci_kontrol=0;
+    int random_number=rand() % 4 + 1;
+     Serial.println(random_number);
+      bitis_sayaci=0;
+      if(toplam<=0){
+        Serial.println(F("kasaya yeteri kadar para atmadiniz"));
+        kalanhizmetint[0]+=button1_sayaci;
+        kalanhizmetint[1]+=button2_sayaci;
+        kalanhizmetint[2]+=button3_sayaci;
+        kalanhizmetint[3]+=button4_sayaci;
+        beslira-=beslik_count;
+        onlira-=onluk_count;
+        yirmilira-=yirmilik_count;
+        ellilira-=ellilik_count;
+       yuzlira-=yuzluk_count;
+       button1_sayaci=0;
+        button2_sayaci=0;
+        button3_sayaci=0;
+        button4_sayaci=0;
+        beslik_count=0;
+        onluk_count=0;
+        yirmilik_count=0;
+        ellilik_count=0;
+        yuzluk_count=0;
+        
+      }else if(random_number==2){
+        resetkontrol=1;
+        digitalWrite(redled,HIGH);
+        delay(550);
+        digitalWrite(redled,LOW);
+        Serial.println(F("lutfen reset butonuna basiniz"));
+        kalanhizmetint[0]+=button1_sayaci;
+        kalanhizmetint[1]+=button2_sayaci;
+        kalanhizmetint[2]+=button3_sayaci;
+        kalanhizmetint[3]+=button4_sayaci;
+        beslira-=beslik_count;
+        onlira-=onluk_count;
+        yirmilira-=yirmilik_count;
+        ellilira-=ellilik_count;
+       yuzlira-=yuzluk_count;
+        button1_sayaci=0;
+        button2_sayaci=0;
+        button3_sayaci=0;
+        button4_sayaci=0;
+        beslik_count=0;
+        onluk_count=0;
+        yirmilik_count=0;
+        ellilik_count=0;
+        yuzluk_count=0;
+      }
+      else{
+        paraustu=toplam;
+        digitalWrite(greenled,HIGH);
+        delay(550);
+        digitalWrite(greenled,LOW);
+        //beslira,onlira,yirmilira,ellilira,yuzlira
+        if(yuzlira>0 && toplam>0){
+          int yuzadet=toplam/100;
+          if(yuzadet!=0){
+            for(int i=yuzlira;i>=1;i--){
+              if(yuzadet==i){
+                toplam-=yuzadet*100;
+                Serial.print(yuzadet);
+                yuzlira-=yuzadet;
+                Serial.print(" 100 tl para ustu verildi ");
+              }
+            }
+          }
+        }
+        if(ellilira>0 && toplam>0){
+          int elliadet=toplam/50;
+          if(elliadet!=0){
+            for(int i=ellilira;i>=1;i--){
+              if(elliadet==i){
+                toplam-=elliadet*50;
+                Serial.print(elliadet);
+                ellilira-=elliadet;
+                Serial.print(" 50 tl para ustu verildi ");
+              }
+            }
+          }
+        }
+        if(yirmilira>0 && toplam>0){
+          int yirmiadet=toplam/20;
+          if(yirmiadet!=0){
+            for(int i=yirmilira;i>=1;i--){
+              if(yirmiadet==i){
+                toplam-=yirmiadet*20;
+                Serial.print(yirmiadet);
+                yirmilira-=yirmiadet;
+                Serial.print(" 20 tl para ustu verildi ");
+              }
+            }
+          }
+        }
+        if(onlira>0 && toplam>0){
+          int onadet=toplam/10;
+          if(onadet!=0){
+            for(int i=onlira;i>=1;i--){
+              if(onadet==i){
+                toplam-=onadet*10;
+                Serial.print(onadet);
+                onlira-=onadet;
+                Serial.print(" 10 tl para ustu verildi ");
+              }
+            }
+          }
+        }if(beslira>0 && toplam>0){
+          int besadet=toplam/5;
+          if(besadet!=0){
+            for(int i=beslira;i>=1;i--){
+              if(besadet==i){
+                toplam-=besadet*5;
+                Serial.print(besadet);
+                beslira-=besadet;
+                Serial.print(" 5 tl para ustu verildi ");
+              }
+            }
+          }
+        }
+        Serial.print(paraustu);
+        Serial.println(F(" para ustu verildi "));
+        button1_sayaci=0;
+        button2_sayaci=0;
+        button3_sayaci=0;
+        button4_sayaci=0;
+        beslik_count=0;
+        onluk_count=0;
+        yirmilik_count=0;
+        ellilik_count=0;
+        yuzluk_count=0;
+        Serial.print(beslira);
+      Serial.print(",");
+      Serial.print(onlira);
+      Serial.print(",");
+      Serial.print(yirmilira);
+      Serial.print(",");
+      Serial.print(ellilira);
+      Serial.print(",");
+      Serial.print(yuzlira);
+      Serial.println();
+      Serial.print("1,kopukleme,");
+      Serial.print(kalanhizmetint[0]);
+      Serial.print(",");
+      Serial.println(F("15"));
+      Serial.print("2,yikama,");
+      Serial.print(kalanhizmetint[1]);
+      Serial.print(",");
+      Serial.println(F("10"));
+      Serial.print("3,kurulama,");
+      Serial.print(kalanhizmetint[2]);
+      Serial.print(",");
+      Serial.println("5");
+      Serial.print(F("4,cilalama,"));
+      Serial.print(kalanhizmetint[3]);
+      Serial.print(",");
+      Serial.println(F("50"));
+
+      Serial.println(F("1.Buton: 5 TL Sayisi"));
+  Serial.println(F("2.Buton: 10 TL Sayisi"));
+  Serial.println(F("3.Buton: 20 TL Sayisi"));
+  Serial.println(F("4.Buton: 50 TL Sayisi"));
+  Serial.println(F("5.Buton: 100 TL Sayisi"));
+  Serial.println(F("6.Bitis"));
+      }
+      bitis_sayaci==0;
+      hizmet_secim_sayisi=0;
+
+      
+      toplam=0;
+    }
+    button3durum==0;
+  }
+  if(button6durum==1){
+    if(toplam==0){
+      Serial.println("kasaya para atmadiniz lutfen kasaya para atiniz...");
+    }
+    else if(secimsayaci==0){
+      button6durum==0;
+      secimsayaci++;
+      bitis_sayaci_kontrol++;
+    bitis_sayaci++;
+    kasaya_atilan=toplam;
+    Serial.print(toplam);
+    Serial.println(F("lira para attiniz"));
+    Serial.print((beslira));
+      Serial.print((","));
+      Serial.print((onlira));
+      Serial.print((","));
+      Serial.print((yirmilira));
+      Serial.print((","));
+      Serial.print((ellilira));
+      Serial.print((","));
+      Serial.print((yuzlira));
+      Serial.println();
+      Serial.print(("1,kopukleme,"));
+      Serial.print((kalanhizmetint[0]));
+      Serial.print((","));
+      Serial.println(F("15"));
+      Serial.print(("2,yikama,"));
+      Serial.print((kalanhizmetint[1]));
+      Serial.print((","));
+      Serial.println(F("10"));
+      Serial.print(("3,kurulama,"));
+      Serial.print((kalanhizmetint[2]));
+      Serial.print((","));
+      Serial.println(F("5"));
+      Serial.print(F("4,cilalama,"));
+      Serial.print((kalanhizmetint[3]));
+      Serial.print((","));
+      Serial.println(F("50"));
+    Serial.println(F("kopukleme"));
+    Serial.println(F("yikama"));
+    Serial.println(F("kurulama"));
+    Serial.println(F("cilalama"));
+    Serial.println(F("Bitis"));
+    Serial.println(F("RESET"));
+    }else{
+      
+    }
+  }
+
+
+
+
+  
+}
